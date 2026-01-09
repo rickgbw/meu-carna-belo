@@ -234,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen>
           ),
           const SizedBox(height: 16),
           Text(
-            'Fontes: blocosderua.com e outros sites de carnaval',
+            'Fonte: Vou Pro Bloco 2026',
             style: TextStyle(
               color: Colors.grey[500],
               fontSize: 12,
@@ -454,12 +454,12 @@ class _HomeScreenState extends State<HomeScreen>
                                 _selectedFilter = filter;
                                 _filterEvents();
                               },
-                              backgroundColor: Colors.white.withOpacity(0.2),
+                              backgroundColor: Colors.white.withOpacity(0.9),
                               selectedColor: CarnivalTheme.yellow,
                               labelStyle: TextStyle(
                                 color: isSelected
                                     ? CarnivalTheme.deepPurple
-                                    : Colors.white,
+                                    : CarnivalTheme.purple,
                                 fontWeight: FontWeight.w600,
                               ),
                               shape: RoundedRectangleBorder(
@@ -467,7 +467,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 side: BorderSide(
                                   color: isSelected
                                       ? CarnivalTheme.yellow
-                                      : Colors.white.withOpacity(0.3),
+                                      : CarnivalTheme.purple.withOpacity(0.3),
                                 ),
                               ),
                             ),

@@ -1,11 +1,13 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:http/http.dart' as http;
-import 'package:html/parser.dart' as html_parser;
 import 'package:html/dom.dart';
+import 'package:html/parser.dart' as html_parser;
+import 'package:http/http.dart' as http;
+
 import '../models/bloco_event.dart';
 
 class CarnivalScraper {
   static const List<String> _sources = [
+    'https://docs.google.com/spreadsheets/d/1THVJ8O_P19UkHq6DMgcfNF77fyD4lNWlmZA_rOM9FY4/export?format=csv&gid=0',
     'https://www.blocosderua.com/belo-horizonte/',
     'https://www.blocosderua.com/belo-horizonte/programacao/',
   ];
@@ -94,7 +96,8 @@ class CarnivalScraper {
 
     // Try to find event cards/items - common patterns on carnival sites
     final eventElements = document.querySelectorAll(
-        '.evento, .bloco, .event-item, .programacao-item, article, .card');
+      '.evento, .bloco, .event-item, .programacao-item, article, .card',
+    );
 
     for (final element in eventElements) {
       try {
@@ -204,11 +207,15 @@ class CarnivalScraper {
   }
 
   static List<BlocoEvent> _parseGenericStructure(
-      Document document, String sourceUrl) {
+    Document document,
+    String sourceUrl,
+  ) {
     final List<BlocoEvent> events = [];
 
     // Look for links that might be event pages
-    final links = document.querySelectorAll('a[href*="programacao"], a[href*="bloco"], a[href*="evento"]');
+    final links = document.querySelectorAll(
+      'a[href*="programacao"], a[href*="bloco"], a[href*="evento"]',
+    );
 
     for (final link in links) {
       final href = link.attributes['href'];
@@ -219,17 +226,20 @@ class CarnivalScraper {
         if (_looksLikeEventName(text)) {
           final dateMatch = _extractDateFromUrl(href);
 
-          events.add(BlocoEvent(
-            id: _generateId(text, dateMatch ?? DateTime(2026, 2, 1)),
-            name: text,
-            dateTime: dateMatch ?? DateTime(2026, 2, 1, 16, 0),
-            description: 'Bloco de carnaval em Belo Horizonte. Mais informacoes em breve!',
-            address: 'Belo Horizonte, MG',
-            neighborhood: 'Centro',
-            ticketPrice: 'Consulte',
-            ticketUrl: _makeAbsoluteUrl(href, sourceUrl),
-            tags: _extractTags(text, null),
-          ));
+          events.add(
+            BlocoEvent(
+              id: _generateId(text, dateMatch ?? DateTime(2026, 2, 1)),
+              name: text,
+              dateTime: dateMatch ?? DateTime(2026, 2, 1, 16, 0),
+              description:
+                  'Bloco de carnaval em Belo Horizonte. Mais informacoes em breve!',
+              address: 'Belo Horizonte, MG',
+              neighborhood: 'Centro',
+              ticketPrice: 'Consulte',
+              ticketUrl: _makeAbsoluteUrl(href, sourceUrl),
+              tags: _extractTags(text, null),
+            ),
+          );
         }
       }
     }
@@ -297,28 +307,77 @@ class CarnivalScraper {
 
   static int _parseMonth(String monthStr) {
     final months = {
-      'jan': 1, 'janeiro': 1, '01': 1, '1': 1,
-      'fev': 2, 'fevereiro': 2, '02': 2, '2': 2,
-      'mar': 3, 'marco': 3, '03': 3, '3': 3,
-      'abr': 4, 'abril': 4, '04': 4, '4': 4,
-      'mai': 5, 'maio': 5, '05': 5, '5': 5,
-      'jun': 6, 'junho': 6, '06': 6, '6': 6,
-      'jul': 7, 'julho': 7, '07': 7, '7': 7,
-      'ago': 8, 'agosto': 8, '08': 8, '8': 8,
-      'set': 9, 'setembro': 9, '09': 9, '9': 9,
-      'out': 10, 'outubro': 10, '10': 10,
-      'nov': 11, 'novembro': 11, '11': 11,
-      'dez': 12, 'dezembro': 12, '12': 12,
+      'jan': 1,
+      'janeiro': 1,
+      '01': 1,
+      '1': 1,
+      'fev': 2,
+      'fevereiro': 2,
+      '02': 2,
+      '2': 2,
+      'mar': 3,
+      'marco': 3,
+      '03': 3,
+      '3': 3,
+      'abr': 4,
+      'abril': 4,
+      '04': 4,
+      '4': 4,
+      'mai': 5,
+      'maio': 5,
+      '05': 5,
+      '5': 5,
+      'jun': 6,
+      'junho': 6,
+      '06': 6,
+      '6': 6,
+      'jul': 7,
+      'julho': 7,
+      '07': 7,
+      '7': 7,
+      'ago': 8,
+      'agosto': 8,
+      '08': 8,
+      '8': 8,
+      'set': 9,
+      'setembro': 9,
+      '09': 9,
+      '9': 9,
+      'out': 10,
+      'outubro': 10,
+      '10': 10,
+      'nov': 11,
+      'novembro': 11,
+      '11': 11,
+      'dez': 12,
+      'dezembro': 12,
+      '12': 12,
     };
     return months[monthStr.toLowerCase()] ?? 2;
   }
 
   static String _extractNeighborhood(String location) {
     final neighborhoods = [
-      'Centro', 'Savassi', 'Funcionarios', 'Lourdes', 'Santa Efigenia',
-      'Floresta', 'Barro Preto', 'Lagoinha', 'Pampulha', 'Gameleira',
-      'Dom Cabral', 'Serra', 'Sion', 'Anchieta', 'Carmo', 'Cruzeiro',
-      'Santo Antonio', 'Cidade Jardim', 'Buritis', 'Belvedere',
+      'Centro',
+      'Savassi',
+      'Funcionarios',
+      'Lourdes',
+      'Santa Efigenia',
+      'Floresta',
+      'Barro Preto',
+      'Lagoinha',
+      'Pampulha',
+      'Gameleira',
+      'Dom Cabral',
+      'Serra',
+      'Sion',
+      'Anchieta',
+      'Carmo',
+      'Cruzeiro',
+      'Santo Antonio',
+      'Cidade Jardim',
+      'Buritis',
+      'Belvedere',
     ];
 
     for (final neighborhood in neighborhoods) {
@@ -338,7 +397,9 @@ class CarnivalScraper {
     if (description == null) return null;
 
     final lower = description.toLowerCase();
-    if (lower.contains('gratuito') || lower.contains('gratis') || lower.contains('free')) {
+    if (lower.contains('gratuito') ||
+        lower.contains('gratis') ||
+        lower.contains('free')) {
       return 'Entrada Gratuita';
     }
 
@@ -383,7 +444,14 @@ class CarnivalScraper {
   static bool _looksLikeEventName(String text) {
     if (text.length < 5 || text.length > 100) return false;
 
-    final keywords = ['bloco', 'ensaio', 'carnaval', 'pre-carnaval', 'axe', 'samba'];
+    final keywords = [
+      'bloco',
+      'ensaio',
+      'carnaval',
+      'pre-carnaval',
+      'axe',
+      'samba',
+    ];
     final lower = text.toLowerCase();
 
     for (final keyword in keywords) {
