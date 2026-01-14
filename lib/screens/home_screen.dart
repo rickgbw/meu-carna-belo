@@ -1,8 +1,12 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../models/bloco_event.dart';
+import '../services/favorites_service.dart';
 import '../services/location_service.dart';
 import '../services/sync_manager.dart';
 import '../theme/carnival_theme.dart';
@@ -20,17 +24,24 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   final SyncManager _syncManager = SyncManager();
+  final FavoritesService _favoritesService = FavoritesService();
   List<BlocoEvent> _filteredEvents = [];
   String _searchQuery = '';
   String _selectedFilter = 'Hoje';
   late AnimationController _animationController;
 
   Position? _currentPosition;
+  // Cache all distances once when location changes, not on every filter
+  Map<String, String> _allEventDistances = {};
   Map<String, String> _eventDistances = {};
+
+  // Debounce timer for search
+  Timer? _searchDebounce;
 
   final List<String> _filters = [
     'Hoje',
     'Todos',
+    'Favoritos',
     'Gratuito',
     'Axe',
     'Samba',
@@ -47,11 +58,13 @@ class _HomeScreenState extends State<HomeScreen>
     );
 
     _syncManager.addListener(_onSyncUpdate);
+    _favoritesService.addListener(_onFavoritesUpdate);
     _initializeData();
     _getCurrentLocation();
   }
 
   Future<void> _initializeData() async {
+    await _favoritesService.initialize();
     await _syncManager.initialize();
     _filterEvents();
     _animationController.forward();
@@ -61,21 +74,24 @@ class _HomeScreenState extends State<HomeScreen>
     try {
       final position = await LocationService.getCurrentPosition();
       if (position != null && mounted) {
-        setState(() {
-          _currentPosition = position;
-          _calculateDistances();
-        });
+        _currentPosition = position;
+        _calculateAllDistances();
+        _updateFilteredDistances();
       }
     } catch (e) {
-      print('Error getting location: $e');
+      if (kDebugMode) {
+        print('Error getting location: $e');
+      }
     }
   }
 
-  void _calculateDistances() {
+  /// Calculate distances for ALL events once when location changes
+  /// This is cached and reused when filtering
+  void _calculateAllDistances() {
     if (_currentPosition == null) return;
 
     final distances = <String, String>{};
-    for (var event in _filteredEvents) {
+    for (final event in _syncManager.events) {
       if (event.latitude != null && event.longitude != null) {
         final distance = LocationService.calculateDistance(
           event.latitude,
@@ -86,6 +102,18 @@ class _HomeScreenState extends State<HomeScreen>
         if (distance != null) {
           distances[event.id] = LocationService.formatDistance(distance);
         }
+      }
+    }
+    _allEventDistances = distances;
+  }
+
+  /// Update distances for filtered events from cache (O(n) lookup, no calculation)
+  void _updateFilteredDistances() {
+    final distances = <String, String>{};
+    for (final event in _filteredEvents) {
+      final cached = _allEventDistances[event.id];
+      if (cached != null) {
+        distances[event.id] = cached;
       }
     }
     setState(() {
@@ -99,73 +127,108 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
+  void _onFavoritesUpdate() {
+    if (mounted) {
+      _filterEvents();
+    }
+  }
+
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _syncManager.removeListener(_onSyncUpdate);
+    _favoritesService.removeListener(_onFavoritesUpdate);
     _syncManager.dispose();
     _animationController.dispose();
     super.dispose();
   }
 
   void _filterEvents() {
-    setState(() {
-      final now = DateTime.now();
-      _filteredEvents = _syncManager.events.where((event) {
-        final matchesSearch =
-            event.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            event.neighborhood.toLowerCase().contains(
-              _searchQuery.toLowerCase(),
-            ) ||
-            event.description.toLowerCase().contains(
-              _searchQuery.toLowerCase(),
-            );
+    final now = DateTime.now();
+    final searchLower = _searchQuery.toLowerCase();
+    final filterLower = _selectedFilter.toLowerCase();
 
-        final isToday =
-            event.dateTime.year == now.year &&
-            event.dateTime.month == now.month &&
-            event.dateTime.day == now.day;
+    // Filter and sort in a single pass where possible
+    final filtered = <BlocoEvent>[];
+    for (final event in _syncManager.events) {
+      // Search matching
+      final matchesSearch = searchLower.isEmpty ||
+          event.name.toLowerCase().contains(searchLower) ||
+          event.neighborhood.toLowerCase().contains(searchLower) ||
+          event.description.toLowerCase().contains(searchLower);
 
-        final matchesFilter =
-            _selectedFilter == 'Todos' ||
-            (_selectedFilter == 'Hoje' && isToday) ||
-            (_selectedFilter == 'Gratuito' &&
-                event.ticketPrice?.contains('Gratuita') == true) ||
-            event.tags.any(
-              (tag) => tag.toLowerCase() == _selectedFilter.toLowerCase(),
-            );
+      if (!matchesSearch) continue;
 
-        return matchesSearch && matchesFilter;
-      }).toList();
+      // Filter matching
+      bool matchesFilter;
+      switch (_selectedFilter) {
+        case 'Todos':
+          matchesFilter = true;
+          break;
+        case 'Hoje':
+          matchesFilter = event.dateTime.year == now.year &&
+              event.dateTime.month == now.month &&
+              event.dateTime.day == now.day;
+          break;
+        case 'Favoritos':
+          matchesFilter = _favoritesService.isFavorite(event.id);
+          break;
+        case 'Gratuito':
+          matchesFilter = event.ticketPrice?.contains('Gratuita') == true;
+          break;
+        default:
+          matchesFilter = event.tags.any((tag) => tag.toLowerCase() == filterLower);
+      }
 
-      // Sort: upcoming events first (soonest first), then past events (most recent first)
-      _filteredEvents.sort((a, b) {
-        final aIsPast = a.dateTime.isBefore(now);
-        final bIsPast = b.dateTime.isBefore(now);
+      if (matchesFilter) {
+        filtered.add(event);
+      }
+    }
 
-        if (aIsPast && !bIsPast)
-          return 1; // a is past, b is upcoming -> b first
-        if (!aIsPast && bIsPast)
-          return -1; // a is upcoming, b is past -> a first
-        if (!aIsPast && !bIsPast) {
-          // Both upcoming: soonest first
-          return a.dateTime.compareTo(b.dateTime);
-        }
-        // Both past: most recent first
-        return b.dateTime.compareTo(a.dateTime);
-      });
+    // Sort: upcoming events first (soonest first), then past events (most recent first)
+    filtered.sort((a, b) {
+      final aIsPast = a.dateTime.isBefore(now);
+      final bIsPast = b.dateTime.isBefore(now);
+
+      if (aIsPast && !bIsPast) {
+        return 1; // a is past, b is upcoming -> b first
+      }
+      if (!aIsPast && bIsPast) {
+        return -1; // a is upcoming, b is past -> a first
+      }
+      if (!aIsPast && !bIsPast) {
+        // Both upcoming: soonest first
+        return a.dateTime.compareTo(b.dateTime);
+      }
+      // Both past: most recent first
+      return b.dateTime.compareTo(a.dateTime);
     });
 
-    // Recalculate distances after filtering
+    setState(() {
+      _filteredEvents = filtered;
+    });
+
+    // Update distances from cache (no recalculation)
     if (_currentPosition != null) {
-      _calculateDistances();
+      _updateFilteredDistances();
     }
   }
 
   Future<void> _refreshData() async {
     await _syncManager.syncEvents(force: true);
+    _calculateAllDistances(); // Recalculate distances for new events
     _animationController.reset();
     _animationController.forward();
     await _getCurrentLocation();
+  }
+
+  /// Debounced search handler to avoid filtering on every keystroke
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      _searchQuery = value;
+      _filterEvents();
+    });
   }
 
   void _showSyncInfo() {
@@ -464,10 +527,7 @@ class _HomeScreenState extends State<HomeScreen>
                             ],
                           ),
                           child: TextField(
-                            onChanged: (value) {
-                              _searchQuery = value;
-                              _filterEvents();
-                            },
+                            onChanged: _onSearchChanged,
                             decoration: InputDecoration(
                               hintText: 'Buscar blocos...',
                               hintStyle: TextStyle(color: Colors.grey[400]),
@@ -684,6 +744,10 @@ class _HomeScreenState extends State<HomeScreen>
                                   child: EventCard(
                                     event: event,
                                     distanceText: _eventDistances[event.id],
+                                    isFavorite: _favoritesService.isFavorite(event.id),
+                                    onFavoriteToggle: () {
+                                      _favoritesService.toggleFavorite(event.id);
+                                    },
                                     onTap: () {
                                       Navigator.push(
                                         context,

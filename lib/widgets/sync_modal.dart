@@ -192,9 +192,9 @@ class _SyncModalState extends State<SyncModal>
 
               // Decorative confetti emojis
               const SizedBox(height: 40),
-              Row(
+              const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
+                children: [
                   Text('🎭', style: TextStyle(fontSize: 28)),
                   SizedBox(width: 16),
                   Text('🎊', style: TextStyle(fontSize: 28)),

@@ -7,13 +7,28 @@ class EventCard extends StatelessWidget {
   final BlocoEvent event;
   final VoidCallback onTap;
   final String? distanceText;
+  final bool isFavorite;
+  final VoidCallback? onFavoriteToggle;
 
   const EventCard({
     super.key,
     required this.event,
     required this.onTap,
     this.distanceText,
+    this.isFavorite = false,
+    this.onFavoriteToggle,
   });
+
+  // Cached decorations for better performance
+  static final _cardBorderRadius = BorderRadius.circular(20);
+  static final _badgeBorderRadius = BorderRadius.circular(20);
+  static final _tagBorderRadius = BorderRadius.circular(12);
+  static final _priceBorderRadius = BorderRadius.circular(15);
+  static final _distanceBorderRadius = BorderRadius.circular(10);
+
+  static const _dateGradient = LinearGradient(
+    colors: [CarnivalTheme.purple, CarnivalTheme.pink],
+  );
 
   bool get _isPastEvent {
     final now = DateTime.now();
@@ -23,19 +38,22 @@ class EventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isPast = _isPastEvent;
+
     return GestureDetector(
       onTap: onTap,
-      child: Opacity(
-        opacity: _isPastEvent ? 0.5 : 1.0,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: isPast ? 0.5 : 1.0,
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            gradient: _isPastEvent ? null : CarnivalTheme.cardGradient,
-            color: _isPastEvent ? Colors.grey[200] : null,
-            borderRadius: BorderRadius.circular(20),
+            gradient: isPast ? null : CarnivalTheme.cardGradient,
+            color: isPast ? Colors.grey[200] : null,
+            borderRadius: _cardBorderRadius,
             boxShadow: [
               BoxShadow(
-                color: _isPastEvent
+                color: isPast
                     ? Colors.grey.withOpacity(0.2)
                     : CarnivalTheme.purple.withOpacity(0.2),
                 blurRadius: 15,
@@ -44,46 +62,41 @@ class EventCard extends StatelessWidget {
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: _cardBorderRadius,
             child: Stack(
               children: [
-                // Decorative confetti dots
-                Positioned(
+                // Decorative confetti dots - using const where possible
+                const _ConfettiDot(
                   right: -10,
                   top: -10,
-                  child: Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: CarnivalTheme.pink.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
+                  size: 60,
+                  color: CarnivalTheme.pink,
+                  opacity: 0.2,
                 ),
-                Positioned(
+                const _ConfettiDot(
                   right: 30,
                   top: 20,
-                  child: Container(
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: CarnivalTheme.yellow.withOpacity(0.4),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
+                  size: 20,
+                  color: CarnivalTheme.yellow,
+                  opacity: 0.4,
                 ),
-                Positioned(
+                const _ConfettiDot(
                   right: 60,
                   bottom: 10,
-                  child: Container(
-                    width: 15,
-                    height: 15,
-                    decoration: BoxDecoration(
-                      color: CarnivalTheme.cyan.withOpacity(0.3),
-                      shape: BoxShape.circle,
+                  size: 15,
+                  color: CarnivalTheme.cyan,
+                  opacity: 0.3,
+                ),
+                // Favorite button
+                if (onFavoriteToggle != null)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: _FavoriteButton(
+                      isFavorite: isFavorite,
+                      onTap: onFavoriteToggle!,
                     ),
                   ),
-                ),
                 // Content
                 Padding(
                   padding: const EdgeInsets.all(16),
@@ -99,13 +112,8 @@ class EventCard extends StatelessWidget {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [
-                                  CarnivalTheme.purple,
-                                  CarnivalTheme.pink,
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(20),
+                              gradient: _dateGradient,
+                              borderRadius: _badgeBorderRadius,
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -135,7 +143,7 @@ class EventCard extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: CarnivalTheme.orange,
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: _badgeBorderRadius,
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -200,12 +208,12 @@ class EventCard extends StatelessWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: CarnivalTheme.cyan.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: _distanceBorderRadius,
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(
+                                  const Icon(
                                     Icons.navigation,
                                     size: 12,
                                     color: CarnivalTheme.cyan,
@@ -213,7 +221,7 @@ class EventCard extends StatelessWidget {
                                   const SizedBox(width: 4),
                                   Text(
                                     distanceText!,
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       color: CarnivalTheme.cyan,
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
@@ -226,37 +234,15 @@ class EventCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       // Tags
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: event.tags.asMap().entries.map((entry) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: CarnivalTheme.getTagColor(
-                                entry.key,
-                              ).withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: CarnivalTheme.getTagColor(
-                                  entry.key,
-                                ).withOpacity(0.3),
-                              ),
-                            ),
-                            child: Text(
-                              entry.value,
-                              style: TextStyle(
-                                color: CarnivalTheme.getTagColor(entry.key),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
+                      if (event.tags.isNotEmpty)
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            for (int i = 0; i < event.tags.length; i++)
+                              _TagChip(tag: event.tags[i], index: i),
+                          ],
+                        ),
                       const SizedBox(height: 12),
                       // Price
                       Row(
@@ -272,7 +258,7 @@ class EventCard extends StatelessWidget {
                                 color: event.ticketPrice!.contains('Gratuita')
                                     ? CarnivalTheme.green
                                     : CarnivalTheme.gold,
-                                borderRadius: BorderRadius.circular(15),
+                                borderRadius: _priceBorderRadius,
                               ),
                               child: Text(
                                 event.ticketPrice!,
@@ -296,6 +282,110 @@ class EventCard extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Confetti dot decoration - extracted for const construction
+class _ConfettiDot extends StatelessWidget {
+  final double? right;
+  final double? top;
+  final double? bottom;
+  final double size;
+  final Color color;
+  final double opacity;
+
+  const _ConfettiDot({
+    this.right,
+    this.top,
+    this.bottom,
+    required this.size,
+    required this.color,
+    required this.opacity,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      right: right,
+      top: top,
+      bottom: bottom,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: color.withOpacity(opacity),
+          shape: BoxShape.circle,
+        ),
+      ),
+    );
+  }
+}
+
+/// Favorite button - extracted for cleaner code
+class _FavoriteButton extends StatelessWidget {
+  final bool isFavorite;
+  final VoidCallback onTap;
+
+  const _FavoriteButton({
+    required this.isFavorite,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.9),
+          shape: BoxShape.circle,
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(
+          isFavorite ? Icons.favorite : Icons.favorite_border,
+          size: 20,
+          color: isFavorite ? CarnivalTheme.pink : Colors.grey,
+        ),
+      ),
+    );
+  }
+}
+
+/// Tag chip - extracted for cleaner iteration
+class _TagChip extends StatelessWidget {
+  final String tag;
+  final int index;
+
+  const _TagChip({required this.tag, required this.index});
+
+  static final _borderRadius = BorderRadius.circular(12);
+
+  @override
+  Widget build(BuildContext context) {
+    final color = CarnivalTheme.getTagColor(index);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: _borderRadius,
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Text(
+        tag,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

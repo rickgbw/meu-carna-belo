@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:geocoding/geocoding.dart';
 
 class GeocodingService {
@@ -20,7 +21,9 @@ class GeocodingService {
         return (latitude: location.latitude, longitude: location.longitude);
       }
     } catch (e) {
-      print('Geocoding error for "$address": $e');
+      if (kDebugMode) {
+        print('Geocoding error for "$address": $e');
+      }
       // Try with just the address if full address fails
       try {
         final locations = await locationFromAddress(address);
@@ -29,7 +32,9 @@ class GeocodingService {
           return (latitude: location.latitude, longitude: location.longitude);
         }
       } catch (e2) {
-        print('Geocoding retry error: $e2');
+        if (kDebugMode) {
+          print('Geocoding retry error: $e2');
+        }
       }
     }
     return null;

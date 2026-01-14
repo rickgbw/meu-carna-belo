@@ -7,9 +7,7 @@ import '../models/bloco_event.dart';
 
 class CarnivalScraper {
   static const List<String> _sources = [
-    'https://docs.google.com/spreadsheets/d/1THVJ8O_P19UkHq6DMgcfNF77fyD4lNWlmZA_rOM9FY4/export?format=csv&gid=0',
-    'https://www.blocosderua.com/belo-horizonte/',
-    'https://www.blocosderua.com/belo-horizonte/programacao/',
+    'https://docs.google.com/spreadsheets/d/1rG1TIgtPcuaCUx0JjPyuCGs18TYGztEZPRMHpzXH_UM/edit?fbclid=PAc3J0YwZhcHBfaWQMMjU2MjgxMDQwNTU4AAGnFicur5bsdkg5Dm3Wykg4jj6vnGP23hsZcGT7ZSQWnwyVXHB_wLp3kVyufac&brid=oK3oAjo3xLT4iyLjh9IaJw&gid=0#gid=0',
   ];
 
   // CORS proxy for web platform (free public proxies)
@@ -24,6 +22,32 @@ class CarnivalScraper {
     'Accept':
         'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
     'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+  };
+
+  // Pre-compiled RegExp patterns for better performance
+  static final RegExp _datePattern1 = RegExp(r'(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})');
+  static final RegExp _datePattern2 = RegExp(r'(\d{1,2})\s+de\s+(\w+)', caseSensitive: false);
+  static final RegExp _datePattern3 = RegExp(r'(\d{1,2})/(\d{1,2})');
+  static final RegExp _timePattern = RegExp(r'(\d{1,2})[h:](\d{2})?');
+  static final RegExp _idNormalizePattern = RegExp(r'[^a-z0-9]');
+  static final RegExp _pricePattern = RegExp(r'R\$\s*(\d+)');
+  static final RegExp _urlDatePattern1 = RegExp(r'(\d{2})-(\d{2})-(\d{2})');
+  static final RegExp _urlDatePattern2 = RegExp(r'(\d{4})-(\d{2})-(\d{2})');
+
+  // Static month map for efficient lookups
+  static const Map<String, int> _monthMap = {
+    'jan': 1, 'janeiro': 1, '01': 1, '1': 1,
+    'fev': 2, 'fevereiro': 2, '02': 2, '2': 2,
+    'mar': 3, 'marco': 3, '03': 3, '3': 3,
+    'abr': 4, 'abril': 4, '04': 4, '4': 4,
+    'mai': 5, 'maio': 5, '05': 5, '5': 5,
+    'jun': 6, 'junho': 6, '06': 6, '6': 6,
+    'jul': 7, 'julho': 7, '07': 7, '7': 7,
+    'ago': 8, 'agosto': 8, '08': 8, '8': 8,
+    'set': 9, 'setembro': 9, '09': 9, '9': 9,
+    'out': 10, 'outubro': 10, '10': 10,
+    'nov': 11, 'novembro': 11, '11': 11,
+    'dez': 12, 'dezembro': 12, '12': 12,
   };
 
   /// Fetches carnival events from all configured sources
@@ -267,12 +291,8 @@ class CarnivalScraper {
     int minute = 0;
 
     if (dateStr != null) {
-      // Try various date formats
-      final patterns = [
-        RegExp(r'(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})'),
-        RegExp(r'(\d{1,2})\s+de\s+(\w+)', caseSensitive: false),
-        RegExp(r'(\d{1,2})/(\d{1,2})'),
-      ];
+      // Try various date formats using pre-compiled patterns
+      final patterns = [_datePattern1, _datePattern2, _datePattern3];
 
       for (final pattern in patterns) {
         final match = pattern.firstMatch(dateStr);
@@ -294,8 +314,7 @@ class CarnivalScraper {
     }
 
     if (timeStr != null) {
-      final timePattern = RegExp(r'(\d{1,2})[h:](\d{2})?');
-      final match = timePattern.firstMatch(timeStr);
+      final match = _timePattern.firstMatch(timeStr);
       if (match != null) {
         hour = int.tryParse(match.group(1) ?? '') ?? hour;
         minute = int.tryParse(match.group(2) ?? '') ?? 0;
@@ -306,54 +325,7 @@ class CarnivalScraper {
   }
 
   static int _parseMonth(String monthStr) {
-    final months = {
-      'jan': 1,
-      'janeiro': 1,
-      '01': 1,
-      '1': 1,
-      'fev': 2,
-      'fevereiro': 2,
-      '02': 2,
-      '2': 2,
-      'mar': 3,
-      'marco': 3,
-      '03': 3,
-      '3': 3,
-      'abr': 4,
-      'abril': 4,
-      '04': 4,
-      '4': 4,
-      'mai': 5,
-      'maio': 5,
-      '05': 5,
-      '5': 5,
-      'jun': 6,
-      'junho': 6,
-      '06': 6,
-      '6': 6,
-      'jul': 7,
-      'julho': 7,
-      '07': 7,
-      '7': 7,
-      'ago': 8,
-      'agosto': 8,
-      '08': 8,
-      '8': 8,
-      'set': 9,
-      'setembro': 9,
-      '09': 9,
-      '9': 9,
-      'out': 10,
-      'outubro': 10,
-      '10': 10,
-      'nov': 11,
-      'novembro': 11,
-      '11': 11,
-      'dez': 12,
-      'dezembro': 12,
-      '12': 12,
-    };
-    return months[monthStr.toLowerCase()] ?? 2;
+    return _monthMap[monthStr.toLowerCase()] ?? 2;
   }
 
   static String _extractNeighborhood(String location) {
@@ -389,7 +361,7 @@ class CarnivalScraper {
   }
 
   static String _generateId(String name, DateTime dateTime) {
-    final normalized = name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    final normalized = name.toLowerCase().replaceAll(_idNormalizePattern, '');
     return '${normalized}_${dateTime.millisecondsSinceEpoch}';
   }
 
@@ -403,8 +375,7 @@ class CarnivalScraper {
       return 'Entrada Gratuita';
     }
 
-    final pricePattern = RegExp(r'R\$\s*(\d+)');
-    final match = pricePattern.firstMatch(description);
+    final match = _pricePattern.firstMatch(description);
     if (match != null) {
       return 'A partir de R\$ ${match.group(1)}';
     }
@@ -468,31 +439,32 @@ class CarnivalScraper {
 
   static DateTime? _extractDateFromUrl(String url) {
     // Try to extract date from URL patterns like /16-01-26/ or /2026-01-16/
-    final patterns = [
-      RegExp(r'(\d{2})-(\d{2})-(\d{2})'),
-      RegExp(r'(\d{4})-(\d{2})-(\d{2})'),
-    ];
-
-    for (final pattern in patterns) {
-      final match = pattern.firstMatch(url);
-      if (match != null) {
-        try {
-          int day, month, year;
-          if (match.group(1)!.length == 4) {
-            year = int.parse(match.group(1)!);
-            month = int.parse(match.group(2)!);
-            day = int.parse(match.group(3)!);
-          } else {
-            day = int.parse(match.group(1)!);
-            month = int.parse(match.group(2)!);
-            year = 2000 + int.parse(match.group(3)!);
-          }
-          return DateTime(year, month, day, 16, 0);
-        } catch (e) {
-          continue;
-        }
+    // Check 4-digit year pattern first
+    var match = _urlDatePattern2.firstMatch(url);
+    if (match != null) {
+      try {
+        final year = int.parse(match.group(1)!);
+        final month = int.parse(match.group(2)!);
+        final day = int.parse(match.group(3)!);
+        return DateTime(year, month, day, 16, 0);
+      } catch (_) {
+        // Fall through to next pattern
       }
     }
+
+    // Try 2-digit year pattern
+    match = _urlDatePattern1.firstMatch(url);
+    if (match != null) {
+      try {
+        final day = int.parse(match.group(1)!);
+        final month = int.parse(match.group(2)!);
+        final year = 2000 + int.parse(match.group(3)!);
+        return DateTime(year, month, day, 16, 0);
+      } catch (_) {
+        // Return null if parsing fails
+      }
+    }
+
     return null;
   }
 
