@@ -22,7 +22,6 @@ class EventCard extends StatelessWidget {
   // Cached decorations for better performance
   static final _cardBorderRadius = BorderRadius.circular(20);
   static final _badgeBorderRadius = BorderRadius.circular(20);
-  static final _tagBorderRadius = BorderRadius.circular(12);
   static final _priceBorderRadius = BorderRadius.circular(15);
   static final _distanceBorderRadius = BorderRadius.circular(10);
 
@@ -329,10 +328,7 @@ class _FavoriteButton extends StatelessWidget {
   final bool isFavorite;
   final VoidCallback onTap;
 
-  const _FavoriteButton({
-    required this.isFavorite,
-    required this.onTap,
-  });
+  const _FavoriteButton({required this.isFavorite, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

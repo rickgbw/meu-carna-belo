@@ -27,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen>
   final FavoritesService _favoritesService = FavoritesService();
   List<BlocoEvent> _filteredEvents = [];
   String _searchQuery = '';
-  String _selectedFilter = 'Hoje';
+  String _selectedFilter = 'Todos';
   late AnimationController _animationController;
 
   Position? _currentPosition;
@@ -39,10 +39,9 @@ class _HomeScreenState extends State<HomeScreen>
   Timer? _searchDebounce;
 
   final List<String> _filters = [
-    'Hoje',
     'Todos',
+    'Hoje',
     'Favoritos',
-    'Gratuito',
     'Axe',
     'Samba',
     'Funk',
@@ -152,7 +151,8 @@ class _HomeScreenState extends State<HomeScreen>
     final filtered = <BlocoEvent>[];
     for (final event in _syncManager.events) {
       // Search matching
-      final matchesSearch = searchLower.isEmpty ||
+      final matchesSearch =
+          searchLower.isEmpty ||
           event.name.toLowerCase().contains(searchLower) ||
           event.neighborhood.toLowerCase().contains(searchLower) ||
           event.description.toLowerCase().contains(searchLower);
@@ -166,7 +166,8 @@ class _HomeScreenState extends State<HomeScreen>
           matchesFilter = true;
           break;
         case 'Hoje':
-          matchesFilter = event.dateTime.year == now.year &&
+          matchesFilter =
+              event.dateTime.year == now.year &&
               event.dateTime.month == now.month &&
               event.dateTime.day == now.day;
           break;
@@ -177,7 +178,9 @@ class _HomeScreenState extends State<HomeScreen>
           matchesFilter = event.ticketPrice?.contains('Gratuita') == true;
           break;
         default:
-          matchesFilter = event.tags.any((tag) => tag.toLowerCase() == filterLower);
+          matchesFilter = event.tags.any(
+            (tag) => tag.toLowerCase() == filterLower,
+          );
       }
 
       if (matchesFilter) {
@@ -436,7 +439,13 @@ class _HomeScreenState extends State<HomeScreen>
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text('🎭', style: TextStyle(fontSize: 28)),
+                            Image(
+                              image: AssetImage(
+                                'assets/icon/ic_foreground.png',
+                              ),
+                              width: 50,
+                              height: 50,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               'Meu Carna BH',
@@ -452,8 +461,6 @@ class _HomeScreenState extends State<HomeScreen>
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            const Text('🎉', style: TextStyle(fontSize: 28)),
                           ],
                         ),
                         const SizedBox(height: 4),
@@ -744,9 +751,13 @@ class _HomeScreenState extends State<HomeScreen>
                                   child: EventCard(
                                     event: event,
                                     distanceText: _eventDistances[event.id],
-                                    isFavorite: _favoritesService.isFavorite(event.id),
+                                    isFavorite: _favoritesService.isFavorite(
+                                      event.id,
+                                    ),
                                     onFavoriteToggle: () {
-                                      _favoritesService.toggleFavorite(event.id);
+                                      _favoritesService.toggleFavorite(
+                                        event.id,
+                                      );
                                     },
                                     onTap: () {
                                       Navigator.push(

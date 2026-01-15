@@ -114,15 +114,10 @@ class _SplashScreenState extends State<SplashScreen>
                     scale: _scaleAnimation,
                     child: const Column(
                       children: [
-                        Text('🎭', style: TextStyle(fontSize: 80)),
-                        SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text('🎉', style: TextStyle(fontSize: 40)),
-                            SizedBox(width: 16),
-                            Text('🎊', style: TextStyle(fontSize: 40)),
-                          ],
+                        Image(
+                          image: AssetImage('assets/icon/ic_foreground.png'),
+                          width: 250,
+                          height: 250,
                         ),
                       ],
                     ),
@@ -156,20 +151,6 @@ class _SplashScreenState extends State<SplashScreen>
                             textAlign: TextAlign.center,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 60),
-                  FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('💃', style: TextStyle(fontSize: 30)),
-                        SizedBox(width: 16),
-                        Text('🕺', style: TextStyle(fontSize: 30)),
-                        SizedBox(width: 16),
-                        Text('💃', style: TextStyle(fontSize: 30)),
                       ],
                     ),
                   ),
