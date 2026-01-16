@@ -11,6 +11,7 @@ import '../services/location_service.dart';
 import '../services/sync_manager.dart';
 import '../theme/carnival_theme.dart';
 import '../widgets/event_card.dart';
+import '../widgets/filter_drawer.dart';
 import '../widgets/sync_modal.dart';
 import 'event_detail_screen.dart';
 
@@ -23,6 +24,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final SyncManager _syncManager = SyncManager();
   final FavoritesService _favoritesService = FavoritesService();
   List<BlocoEvent> _filteredEvents = [];
@@ -38,15 +40,7 @@ class _HomeScreenState extends State<HomeScreen>
   // Debounce timer for search
   Timer? _searchDebounce;
 
-  final List<String> _filters = [
-    'Todos',
-    'Hoje',
-    'Favoritos',
-    'Axe',
-    'Samba',
-    'Funk',
-    'Rock',
-  ];
+  final List<String> _filters = ['Todos', 'Hoje', 'Favoritos'];
 
   @override
   void initState() {
@@ -420,6 +414,17 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: FilterDrawer(
+        searchQuery: _searchQuery,
+        selectedFilter: _selectedFilter,
+        filters: _filters,
+        onSearchChanged: _onSearchChanged,
+        onFilterSelected: (filter) {
+          _selectedFilter = filter;
+          _filterEvents();
+        },
+      ),
       body: Stack(
         children: [
           // Main content
@@ -435,28 +440,54 @@ class _HomeScreenState extends State<HomeScreen>
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       children: [
-                        // Title with sync button
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Image(
-                              image: AssetImage(
-                                'assets/icon/ic_foreground.png',
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () {
+                                  _scaffoldKey.currentState?.openDrawer();
+                                },
+                                borderRadius: BorderRadius.circular(12),
+                                child: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(
+                                    Icons.tune,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                ),
                               ),
-                              width: 50,
-                              height: 50,
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Meu Carna BH',
-                              style: GoogleFonts.pacifico(
-                                fontSize: 32,
-                                color: Colors.white,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black.withOpacity(0.3),
-                                    offset: const Offset(2, 2),
-                                    blurRadius: 4,
+                            Expanded(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Image(
+                                    image: AssetImage(
+                                      'assets/icon/ic_foreground.png',
+                                    ),
+                                    width: 40,
+                                    height: 40,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Meu Carna BH',
+                                    style: GoogleFonts.pacifico(
+                                      fontSize: 28,
+                                      color: Colors.white,
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.black.withOpacity(0.3),
+                                          offset: const Offset(2, 2),
+                                          blurRadius: 4,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),
@@ -519,154 +550,6 @@ class _HomeScreenState extends State<HomeScreen>
                             ),
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        // Search bar
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: TextField(
-                            onChanged: _onSearchChanged,
-                            decoration: InputDecoration(
-                              hintText: 'Buscar blocos...',
-                              hintStyle: TextStyle(color: Colors.grey[400]),
-                              prefixIcon: Icon(
-                                Icons.search,
-                                color: CarnivalTheme.purple.withOpacity(0.6),
-                              ),
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  Icons.refresh,
-                                  color: _syncManager.isSyncing
-                                      ? Colors.grey[300]
-                                      : CarnivalTheme.purple.withOpacity(0.6),
-                                ),
-                                onPressed: _syncManager.isSyncing
-                                    ? null
-                                    : _refreshData,
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 10,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Filter chips
-                        SizedBox(
-                          height: 40,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: _filters.length,
-                            itemBuilder: (context, index) {
-                              final filter = _filters[index];
-                              final isSelected = _selectedFilter == filter;
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: FilterChip(
-                                  label: Text(filter),
-                                  selected: isSelected,
-                                  onSelected: (selected) {
-                                    _selectedFilter = filter;
-                                    _filterEvents();
-                                  },
-                                  backgroundColor: Colors.white.withOpacity(
-                                    0.9,
-                                  ),
-                                  selectedColor: CarnivalTheme.yellow,
-                                  labelStyle: TextStyle(
-                                    color: isSelected
-                                        ? CarnivalTheme.deepPurple
-                                        : CarnivalTheme.purple,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                    side: BorderSide(
-                                      color: isSelected
-                                          ? CarnivalTheme.yellow
-                                          : CarnivalTheme.purple.withOpacity(
-                                              0.3,
-                                            ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Events count and next sync
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 8,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          child: Text(
-                            '${_filteredEvents.length} blocos encontrados',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        if (_syncManager.needsSync && !_syncManager.isSyncing)
-                          GestureDetector(
-                            onTap: _refreshData,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: CarnivalTheme.orange.withOpacity(0.8),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.update,
-                                    size: 14,
-                                    color: Colors.white,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Atualizar',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
                       ],
                     ),
                   ),

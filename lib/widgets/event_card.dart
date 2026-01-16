@@ -22,7 +22,6 @@ class EventCard extends StatelessWidget {
   // Cached decorations for better performance
   static final _cardBorderRadius = BorderRadius.circular(20);
   static final _badgeBorderRadius = BorderRadius.circular(20);
-  static final _priceBorderRadius = BorderRadius.circular(15);
   static final _distanceBorderRadius = BorderRadius.circular(10);
 
   static const _dateGradient = LinearGradient(
@@ -242,39 +241,6 @@ class EventCard extends StatelessWidget {
                               _TagChip(tag: event.tags[i], index: i),
                           ],
                         ),
-                      const SizedBox(height: 12),
-                      // Price
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          if (event.ticketPrice != null)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: event.ticketPrice!.contains('Gratuita')
-                                    ? CarnivalTheme.green
-                                    : CarnivalTheme.gold,
-                                borderRadius: _priceBorderRadius,
-                              ),
-                              child: Text(
-                                event.ticketPrice!,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                          const Icon(
-                            Icons.arrow_forward_ios,
-                            size: 16,
-                            color: CarnivalTheme.purple,
-                          ),
-                        ],
-                      ),
                     ],
                   ),
                 ),

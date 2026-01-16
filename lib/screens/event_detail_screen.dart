@@ -76,7 +76,6 @@ Veja mais blocos no Meu Carna BH!''';
                         onPressed: () => Navigator.pop(context),
                       ),
                     ),
-                    const SizedBox(width: 16),
                     Expanded(
                       child: Text(
                         'Detalhes do Bloco',
@@ -84,6 +83,7 @@ Veja mais blocos no Meu Carna BH!''';
                           fontSize: 24,
                           color: Colors.white,
                         ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
                     Container(
@@ -130,6 +130,8 @@ Veja mais blocos no Meu Carna BH!''';
                         children: [
                           // Event name
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               const Text('🎭', style: TextStyle(fontSize: 32)),
                               const SizedBox(width: 12),
@@ -137,9 +139,10 @@ Veja mais blocos no Meu Carna BH!''';
                                 child: Text(
                                   event.name,
                                   style: GoogleFonts.poppins(
+                                    color: CarnivalTheme.deepPurple,
                                     fontSize: 24,
                                     fontWeight: FontWeight.bold,
-                                    color: CarnivalTheme.deepPurple,
+                                    height: 0.9,
                                   ),
                                 ),
                               ),
