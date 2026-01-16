@@ -243,128 +243,131 @@ class _HomeScreenState extends State<HomeScreen>
         borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
       ),
       padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 50,
-            height: 5,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: CarnivalTheme.backgroundGradient,
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: const Icon(Icons.sync, color: Colors.white, size: 28),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 50,
+              height: 5,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(10),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Sincronizacao Automatica',
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: CarnivalTheme.deepPurple,
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: CarnivalTheme.backgroundGradient,
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: const Icon(Icons.sync, color: Colors.white, size: 28),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Sincronizacao Automatica',
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: CarnivalTheme.deepPurple,
+                        ),
+                      ),
+                      Text(
+                        'Atualiza a cada ${_syncManager.syncIntervalHours}h',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _buildInfoRow(
+              Icons.access_time,
+              'Ultima sincronizacao',
+              _syncManager.lastSyncFormatted,
+            ),
+            _buildInfoRow(
+              Icons.event,
+              'Total de blocos',
+              '${_syncManager.events.length} eventos',
+            ),
+            _buildInfoRow(
+              Icons.cloud_download,
+              'Status',
+              _syncManager.status.message,
+            ),
+            if (_syncManager.lastError != null)
+              _buildInfoRow(
+                Icons.error_outline,
+                'Erro',
+                _syncManager.lastError!,
+                isError: true,
+              ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      await _syncManager.clearCache();
+                      if (mounted) Navigator.pop(context);
+                    },
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('Limpar Cache'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.grey[700],
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
                       ),
                     ),
-                    Text(
-                      'Atualiza a cada ${_syncManager.syncIntervalHours}h',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          _buildInfoRow(
-            Icons.access_time,
-            'Ultima sincronizacao',
-            _syncManager.lastSyncFormatted,
-          ),
-          _buildInfoRow(
-            Icons.event,
-            'Total de blocos',
-            '${_syncManager.events.length} eventos',
-          ),
-          _buildInfoRow(
-            Icons.cloud_download,
-            'Status',
-            _syncManager.status.message,
-          ),
-          if (_syncManager.lastError != null)
-            _buildInfoRow(
-              Icons.error_outline,
-              'Erro',
-              _syncManager.lastError!,
-              isError: true,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _syncManager.isSyncing
+                        ? null
+                        : () async {
+                            await _refreshData();
+                            if (mounted) Navigator.pop(context);
+                          },
+                    icon: _syncManager.isSyncing
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.refresh),
+                    label: Text(
+                      _syncManager.isSyncing ? 'Sincronizando...' : 'Sincronizar',
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: CarnivalTheme.purple,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    await _syncManager.clearCache();
-                    if (mounted) Navigator.pop(context);
-                  },
-                  icon: const Icon(Icons.delete_outline),
-                  label: const Text('Limpar Cache'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.grey[700],
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _syncManager.isSyncing
-                      ? null
-                      : () async {
-                          await _refreshData();
-                          if (mounted) Navigator.pop(context);
-                        },
-                  icon: _syncManager.isSyncing
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.refresh),
-                  label: Text(
-                    _syncManager.isSyncing ? 'Sincronizando...' : 'Sincronizar',
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: CarnivalTheme.purple,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
